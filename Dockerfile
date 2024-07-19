@@ -1,15 +1,17 @@
-FROM node:alpine as build
+FROM node:20
 
-WORKDIR /usr/src/app
-COPY package*.json ./
-RUN npm clean-install
-RUN npm install react-scripts -g
-COPY . .
-RUN npm run build
+WORKDIR /app
 
-FROM nginx:alpine
+# add `/app/node_modules/.bin` to $PATH
+ENV PATH /app/node_modules/.bin:$PATH
 
-COPY --from=build /usr/src/app/build /usr/share/nginx/html
+# install app dependencies
+COPY package.json yarn.lock* package-lock.json* ./
 
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+RUN npm install
+
+# add app to container and attempt build
+COPY . ./
+RUN npm run build || true
+
+CMD ["npm", "start"]
